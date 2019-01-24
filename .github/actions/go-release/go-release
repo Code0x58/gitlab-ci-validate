@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -e
+if ! [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+    echo "$GITHUB_REF is not a tagged version so aborting"
+    exit 78
+fi
+tag="${GITHUB_REF##refs/tags/}"
+gox --output="builds/{{.Dir}}_{{.OS}}_{{.Arch}}"
+ghr -soft -c "$GITHUB_SHA" "$tag" builds/
