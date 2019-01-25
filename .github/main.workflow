@@ -1,15 +1,15 @@
-workflow "Check and Publish" {
+workflow "Test and Publish" {
   on = "push"
   resolves = "Release"
 }
 
-action "Check" {
+action "Test" {
   uses = "./.github/actions/go-check"
   args = "go-check"
 }
 
 action "Release" {
-  needs = ["Check"]
+  needs = ["Test"]
   uses = "./.github/actions/go-release"
   args = "go-release"
   secrets = ["GITHUB_TOKEN"]
