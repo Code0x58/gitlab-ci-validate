@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime"
+	"strings"
 )
 
 type lintResponse struct {
@@ -27,6 +29,13 @@ const (
 	HARD_FAIL
 )
 
+var version string
+var userAgent string
+
+func init() {
+	userAgent = fmt.Sprintf("gitlab-ci-validate/%s go/%s %s/%s", version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+}
+
 // Validate the given file
 func ValidateFile(path string) (Validation, []error) {
 	content, err := ioutil.ReadFile(path)
@@ -38,7 +47,15 @@ func ValidateFile(path string) (Validation, []error) {
 	if err != nil {
 		return HARD_FAIL, []error{err}
 	}
-	response, err := http.PostForm("https://gitlab.com/api/v4/ci/lint", url.Values{"content": {string(data)}})
+
+	values := url.Values{"content": {string(data)}}
+	request, err := http.NewRequest("POST", "https://gitlab.com/api/v4/ci/lint", strings.NewReader(values.Encode()))
+	if err != nil {
+		return SOFT_FAIL, []error{err}
+	}
+	request.Header.Set("User-Agent", userAgent)
+	response, err := http.DefaultClient.Do(request)
+
 	if err != nil {
 		return SOFT_FAIL, []error{err}
 	}
