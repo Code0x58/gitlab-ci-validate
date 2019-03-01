@@ -43,6 +43,10 @@ func ValidateFile(path string) (Validation, []error) {
 		return HARD_FAIL, []error{err}
 	}
 
+	if !strings.HasSuffix(path, ".yml") {
+		return HARD_FAIL, []error{fmt.Errorf("file name does not end with .yml - only .gitlab-ci.yaml is allowed by GitLab")}
+	}
+
 	data, err := yaml.YAMLToJSON(content)
 	if err != nil {
 		return HARD_FAIL, []error{err}

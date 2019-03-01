@@ -4,7 +4,7 @@ This tool uses GitLab's CI [config validation API endpoint](https://docs.gitlab.
 If you don't want to use the command line, you can paste your config into `https://gitlab.com/<your project>/-/ci/lint` [[ref](https://docs.gitlab.com/ee/ci/yaml/#validate-the-gitlab-ciyml)]
 
 ### Use
-One or more `.gitlab-ci.yml` are passed as arguments on the command line. Any errors will result in a non-zero exit code.
+One or more `.gitlab-ci.yml` are passed as arguments on the command line. Any errors will result in a non-zero exit code. The filename must end in `.yml` to pass, but doesn't have to be `.gitlab-ci.yml`.
 ```text
 $ gitlab-ci-validate ./good.yml ./maybe-good.yml ./bad.yml
 PASS: ./good.yml
