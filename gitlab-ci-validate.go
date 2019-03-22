@@ -11,6 +11,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"flag"
 )
 
 type lintResponse struct {
@@ -88,16 +89,19 @@ func ValidateFile(host string, path string) (Validation, []error) {
 func main() {
 	// TODO(Code0x58): return 1 if any are invalid, return 2 if only failures were with connecting to GitLab
 	l := log.New(os.Stderr, "", 0)
-	if len(os.Args) < 3 {
-		l.Println(fmt.Sprintf("Usage: %s gitlab_host gitlab-ci1.yml [...other-gitlab-ci.yml]", os.Args[0]))
+	if len(os.Args) < 2 {
+		l.Println("You must provide the paths to one or more GitLab CI config files.")
 		os.Exit(1)
 	}
 
+	host := flag.String("host", "gitlab.com", "GitLab instance used to validate the config files. Default is gitlab.com")
+	flag.Parse()
+
 	var result Validation
-	for _, source := range os.Args[2:] {
+	for _, source := range flag.Args() {
 		// TODO(Code0x58): implement human friendly CLI
 		// TODO(Code0x58): return consistent and human friendly errors
-		validation, errs := ValidateFile(os.Args[1], source)
+		validation, errs := ValidateFile(*host, source)
 		if validation > result {
 			result = validation
 		}
