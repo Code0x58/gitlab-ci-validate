@@ -54,7 +54,7 @@ func ValidateFile(host string, path string) (Validation, []error) {
 	}
 
 	values := url.Values{"content": {string(data)}}
-	request, err := http.NewRequest("POST", fmt.Sprintf("https://%s/api/v4/ci/lint", host), strings.NewReader(values.Encode()))
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v4/ci/lint", host), strings.NewReader(values.Encode()))
 	if err != nil {
 		return SOFT_FAIL, []error{err}
 	}
@@ -92,7 +92,7 @@ func main() {
 		flag.PrintDefaults()
 	}
 
-	host := flag.String("host", "gitlab.com", "GitLab instance used to validate the config files")
+	host := flag.String("host", "https://gitlab.com", "GitLab instance used to validate the config files")
 	flag.Parse()
 
 	// TODO(Code0x58): return 1 if any are invalid, return 2 if only failures were with connecting to GitLab
