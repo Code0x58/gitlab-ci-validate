@@ -26,6 +26,7 @@ The exit code will be:
  - 1 if any files are invalid (any _HARD FAIL_)
  - 2 if there were no _HARD FAIL_​s but any _SOFT FAIL_​s
 
+You can also use a private GitLab host, e.g.: `gitlab-ci-validate --host=http://user:pass@127.0.0.1:8080 .gitlab-ci.yml`
 
 ### Installation
 You can either use a premade binary from the [releases page](https://github.com/Code0x58/gitlab-ci-validate/releases) or you can install it using `go get`:
