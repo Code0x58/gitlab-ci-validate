@@ -87,15 +87,20 @@ func ValidateFile(host string, path string) (Validation, []error) {
 }
 
 func main() {
-	// TODO(Code0x58): return 1 if any are invalid, return 2 if only failures were with connecting to GitLab
-	l := log.New(os.Stderr, "", 0)
-	if len(os.Args) < 2 {
-		l.Println("You must provide the paths to one or more GitLab CI config files.")
-		os.Exit(1)
+	flag.Usage = func() {
+		fmt.Printf("Usage: %s [-host] file ...\n", os.Args[0])
+		flag.PrintDefaults()
 	}
 
-	host := flag.String("host", "gitlab.com", "GitLab instance used to validate the config files. Default is gitlab.com")
+	host := flag.String("host", "gitlab.com", "GitLab instance used to validate the config files")
 	flag.Parse()
+
+	// TODO(Code0x58): return 1 if any are invalid, return 2 if only failures were with connecting to GitLab
+	l := log.New(os.Stderr, "", 0)
+	if flag.NArg() < 1 {
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	var result Validation
 	for _, source := range flag.Args() {
