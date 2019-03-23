@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/ghodss/yaml"
 	"io/ioutil"
@@ -11,7 +12,6 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"flag"
 )
 
 type lintResponse struct {
@@ -88,14 +88,13 @@ func ValidateFile(host string, path string) (Validation, []error) {
 
 func main() {
 	flag.Usage = func() {
-		fmt.Printf("Usage: %s [-host] file ...\n", os.Args[0])
+		fmt.Printf("Usage: %s [-host=string] file ...\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
 	host := flag.String("host", "https://gitlab.com", "GitLab instance used to validate the config files")
 	flag.Parse()
 
-	// TODO(Code0x58): return 1 if any are invalid, return 2 if only failures were with connecting to GitLab
 	l := log.New(os.Stderr, "", 0)
 	if flag.NArg() < 1 {
 		flag.Usage()
@@ -104,8 +103,6 @@ func main() {
 
 	var result Validation
 	for _, source := range flag.Args() {
-		// TODO(Code0x58): implement human friendly CLI
-		// TODO(Code0x58): return consistent and human friendly errors
 		validation, errs := ValidateFile(*host, source)
 		if validation > result {
 			result = validation
