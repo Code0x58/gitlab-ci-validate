@@ -11,6 +11,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"flag"
 )
 
 type lintResponse struct {
@@ -37,7 +38,7 @@ func init() {
 }
 
 // Validate the given file
-func ValidateFile(path string) (Validation, []error) {
+func ValidateFile(host string, path string) (Validation, []error) {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return HARD_FAIL, []error{err}
@@ -53,7 +54,7 @@ func ValidateFile(path string) (Validation, []error) {
 	}
 
 	values := url.Values{"content": {string(data)}}
-	request, err := http.NewRequest("POST", "https://gitlab.com/api/v4/ci/lint", strings.NewReader(values.Encode()))
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v4/ci/lint", host), strings.NewReader(values.Encode()))
 	if err != nil {
 		return SOFT_FAIL, []error{err}
 	}
@@ -86,18 +87,26 @@ func ValidateFile(path string) (Validation, []error) {
 }
 
 func main() {
+	flag.Usage = func() {
+		fmt.Printf("Usage: %s [-host] file ...\n", os.Args[0])
+		flag.PrintDefaults()
+	}
+
+	host := flag.String("host", "https://gitlab.com", "GitLab instance used to validate the config files")
+	flag.Parse()
+
 	// TODO(Code0x58): return 1 if any are invalid, return 2 if only failures were with connecting to GitLab
 	l := log.New(os.Stderr, "", 0)
-	if len(os.Args) < 2 {
-		l.Println("You must provide the paths to one or more GitLab CI config files.")
+	if flag.NArg() < 1 {
+		flag.Usage()
 		os.Exit(1)
 	}
 
 	var result Validation
-	for _, source := range os.Args[1:] {
+	for _, source := range flag.Args() {
 		// TODO(Code0x58): implement human friendly CLI
 		// TODO(Code0x58): return consistent and human friendly errors
-		validation, errs := ValidateFile(source)
+		validation, errs := ValidateFile(*host, source)
 		if validation > result {
 			result = validation
 		}
