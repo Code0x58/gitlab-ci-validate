@@ -3,7 +3,7 @@ This tool uses GitLab's CI [config validation API endpoint](https://docs.gitlab.
 
 If you don't want to use the command line, you can paste your config into `https://gitlab.com/<your project>/-/ci/lint` [[ref](https://docs.gitlab.com/ee/ci/yaml/#validate-the-gitlab-ciyml)]
 
-### Use
+### Usage
 One or more `.gitlab-ci.yml` are passed as arguments on the command line. Any errors will result in a non-zero exit code. The filename must end in `.yml` to pass, but doesn't have to be `.gitlab-ci.yml`.
 ```text
 $ gitlab-ci-validate ./good.yml ./maybe-good.yml ./bad.yml
@@ -26,7 +26,18 @@ The exit code will be:
  - 1 if any files are invalid (any _HARD FAIL_)
  - 2 if there were no _HARD FAIL_​s but any _SOFT FAIL_​s
 
-You can also use a private GitLab host, e.g.: `gitlab-ci-validate --host=http://user:pass@127.0.0.1:8080 .gitlab-ci.yml`
+### Using private GitLab host
+You can also use a private GitLab host both as a flag or as an environment variable.
+The following are equivalent.
+
+```gitlab-ci-validate --host=http://user:pass@127.0.0.1:8080 .gitlab-ci.yml```
+```
+export GITLAB_HOST=http://user:pass@127.0.0.1:8080
+gitlab-ci-validate .gitlab-ci.yml
+```
+
+The flag has always the precedence in the host evaluation decision.
+When not specified the host used is by default `https://gitlab.com`
 
 ### Installation
 You can either use a premade binary from the [releases page](https://github.com/Code0x58/gitlab-ci-validate/releases) or you can install it using `go get`:

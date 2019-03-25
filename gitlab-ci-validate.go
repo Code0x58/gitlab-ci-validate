@@ -86,13 +86,20 @@ func ValidateFile(host string, path string) (Validation, []error) {
 	return PASS, nil
 }
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func main() {
 	flag.Usage = func() {
 		fmt.Printf("Usage: %s [-host=string] file ...\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
-	host := flag.String("host", "https://gitlab.com", "GitLab instance used to validate the config files")
+	host := flag.String("host", getEnv("GITLAB_HOST", "https://gitlab.com"), "GitLab instance used to validate the config files")
 	flag.Parse()
 
 	l := log.New(os.Stderr, "", 0)
