@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/ghodss/yaml"
 	"io/ioutil"
@@ -53,7 +54,7 @@ func ValidateFile(host string, path string) (Validation, []error) {
 	}
 
 	values := url.Values{"content": {string(data)}}
-	request, err := http.NewRequest("POST", fmt.Sprintf("https://%s/api/v4/ci/lint", host), strings.NewReader(values.Encode()))
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v4/ci/lint", host), strings.NewReader(values.Encode()))
 	if err != nil {
 		return SOFT_FAIL, []error{err}
 	}
@@ -86,18 +87,23 @@ func ValidateFile(host string, path string) (Validation, []error) {
 }
 
 func main() {
-	// TODO(Code0x58): return 1 if any are invalid, return 2 if only failures were with connecting to GitLab
+	flag.Usage = func() {
+		fmt.Printf("Usage: %s [-host=string] file ...\n", os.Args[0])
+		flag.PrintDefaults()
+	}
+
+	host := flag.String("host", "https://gitlab.com", "GitLab instance used to validate the config files")
+	flag.Parse()
+
 	l := log.New(os.Stderr, "", 0)
-	if len(os.Args) < 3 {
-		l.Println(fmt.Sprintf("Usage: %s gitlab_host gitlab-ci1.yml [...other-gitlab-ci.yml]", os.Args[0]))
+	if flag.NArg() < 1 {
+		flag.Usage()
 		os.Exit(1)
 	}
 
 	var result Validation
-	for _, source := range os.Args[2:] {
-		// TODO(Code0x58): implement human friendly CLI
-		// TODO(Code0x58): return consistent and human friendly errors
-		validation, errs := ValidateFile(os.Args[1], source)
+	for _, source := range flag.Args() {
+		validation, errs := ValidateFile(*host, source)
 		if validation > result {
 			result = validation
 		}
