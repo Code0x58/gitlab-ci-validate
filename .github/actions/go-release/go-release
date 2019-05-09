@@ -5,5 +5,6 @@ if ! [[ "$GITHUB_REF" == refs/tags/v* ]]; then
     exit 78
 fi
 tag="${GITHUB_REF##refs/tags/}"
+export CGO_ENABLED=0
 gox --output="builds/{{.Dir}}_{{.OS}}_{{.Arch}}" --ldflags="-X main.version=$tag"
 ghr -soft -c "$GITHUB_SHA" "$tag" builds/
