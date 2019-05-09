@@ -24,7 +24,7 @@ The exit code will be:
 
  - 0 if all files are valid (all _PASS_)
  - 1 if any files are invalid (any _HARD FAIL_)
- - 2 if there were no _HARD FAIL_​s but any _SOFT FAIL_​s
+ - 2 if there was any _SOFT FAIL_ and no _HARD FAIL_
 
 ### Using private GitLab host
 You can also use a private GitLab host both as a flag or as an environment variable.
@@ -36,7 +36,7 @@ export GITLAB_HOST=http://user:pass@127.0.0.1:8080
 gitlab-ci-validate .gitlab-ci.yml
 ```
 
-The flag has always the precedence in the host evaluation decision.
+The flag has precedence over the environment variable.
 When not specified the host used is by default `https://gitlab.com`
 
 ### Installation
