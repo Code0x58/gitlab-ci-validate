@@ -30,7 +30,10 @@ The exit code will be:
 You can also use a private GitLab host both as a flag or as an environment variable.
 The following are equivalent.
 
-```gitlab-ci-validate --host=http://user:pass@127.0.0.1:8080 .gitlab-ci.yml```
+```
+gitlab-ci-validate --host=http://user:pass@127.0.0.1:8080 .gitlab-ci.yml
+```
+
 ```
 export GITLAB_HOST=http://user:pass@127.0.0.1:8080
 gitlab-ci-validate .gitlab-ci.yml
@@ -43,4 +46,33 @@ When not specified the host used is by default `https://gitlab.com`
 You can either use a premade binary from the [releases page](https://github.com/Code0x58/gitlab-ci-validate/releases) or you can install it using `go get`:
 ```sh
 go get -u github.com/Code0x58/gitlab-ci-validate
+```
+
+#### Usage with Docker containers
+You can use the Dockerfile to build your own image or use the pre-built version available at the [Gitlab container registry](https://gitlab.com/comedian780/docker-gitlab-ci-validate/container_registry).
+
+You can run tests against the gitlab.com endpoint:  
+If no parameter is given the container will look for a file called `.gitlab-ci.yml`
+```sh
+docker run -i --rm \
+-v ${PWD}/.gitlab-ci.yml:/yaml/.gitlab-ci.yml \
+registry.gitlab.com/comedian780/docker-gitlab-ci-validate
+```
+
+You can run tests against a self hosted Gitlab instance with custom filenames:  
+Set the credentials and URL via the `GITLAB_HOST` environment variable  
+```sh
+docker run -i --rm \
+-e GITLAB_HOST=https://GITLAB_USER:GITLAB_PW@your.gitlab.server
+-v ${PWD}:/yaml \
+-v /additional/folder/.additional.yml:/yaml/.additional.yml \
+registry.gitlab.com/comedian780/docker-gitlab-ci-validate custom.yml .files.yaml .additional.yml
+```
+
+You can also test all YAML files inside a directory (this also includes YAML files in subdirectories):
+```sh
+find . -type f -regex ".*\.\(yaml\|yml\|YAML\|YML\)" | xargs -I {}
+docker run -i --rm \
+-v ${PWD}:/yaml \
+registry.gitlab.com/comedian780/docker-gitlab-ci-validate {}
 ```
