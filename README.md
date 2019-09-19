@@ -63,7 +63,7 @@ You can run tests against a self hosted Gitlab instance with custom filenames:
 Set the credentials and URL via the `GITLAB_HOST` environment variable  
 ```sh
 docker run -i --rm \
--e GITLAB_HOST=https://GITLAB_USER:GITLAB_PW@your.gitlab.server
+-e GITLAB_HOST=https://GITLAB_USER:GITLAB_PW@your.gitlab.server \
 -v ${PWD}:/yaml \
 -v /additional/folder/.additional.yml:/yaml/.additional.yml \
 registry.gitlab.com/comedian780/docker-gitlab-ci-validate custom.yml .files.yaml .additional.yml
@@ -71,7 +71,7 @@ registry.gitlab.com/comedian780/docker-gitlab-ci-validate custom.yml .files.yaml
 
 You can also test all YAML files inside a directory (this also includes YAML files in subdirectories):
 ```sh
-find . -type f -regex ".*\.\(yaml\|yml\|YAML\|YML\)" | xargs -I {}
+find . -type f -regex ".*\.\(yaml\|yml\|YAML\|YML\)" | xargs echo | xargs -I {} \
 docker run -i --rm \
 -v ${PWD}:/yaml \
 registry.gitlab.com/comedian780/docker-gitlab-ci-validate {}
