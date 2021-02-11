@@ -38,7 +38,7 @@ func init() {
 }
 
 // Validate the given file
-func ValidateFile(host string, path string) (Validation, []error) {
+func ValidateFile(host string, token string, path string) (Validation, []error) {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return HARD_FAIL, []error{err}
@@ -54,7 +54,7 @@ func ValidateFile(host string, path string) (Validation, []error) {
 	}
 
 	values := url.Values{"content": {string(data)}}
-	request, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v4/ci/lint", host), strings.NewReader(values.Encode()))
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v4/ci/lint?private_token=%s", host, token), strings.NewReader(values.Encode()))
 	if err != nil {
 		return SOFT_FAIL, []error{err}
 	}
@@ -95,9 +95,11 @@ func getEnv(key, fallback string) string {
 
 func main() {
 	flag.Usage = func() {
-		fmt.Printf("Usage: %s [-host=string] file ...\n", os.Args[0])
+		fmt.Printf("Usage: %s [-host=string] [-token=string] file ...\n", os.Args[0])
 		flag.PrintDefaults()
 	}
+
+	token := flag.String("token", getEnv("GITLAB_TOKEN", "NULL"), "GitLab token to authentificate")
 
 	host := flag.String("host", getEnv("GITLAB_HOST", "https://gitlab.com"), "GitLab instance used to validate the config files")
 	flag.Parse()
@@ -110,7 +112,7 @@ func main() {
 
 	var result Validation
 	for _, source := range flag.Args() {
-		validation, errs := ValidateFile(*host, source)
+		validation, errs := ValidateFile(*host, *token, source)
 		if validation > result {
 			result = validation
 		}
