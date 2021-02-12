@@ -38,7 +38,7 @@ func init() {
 }
 
 // Validate the given file
-func ValidateFile(host string, path string) (Validation, []error) {
+func ValidateFile(hostUrl url.URL, path string) (Validation, []error) {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return HARD_FAIL, []error{err}
@@ -54,7 +54,8 @@ func ValidateFile(host string, path string) (Validation, []error) {
 	}
 
 	values := url.Values{"content": {string(data)}}
-	request, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v4/ci/lint", host), strings.NewReader(values.Encode()))
+	hostUrl.Path = "/api/v4/ci/lint"
+	request, err := http.NewRequest("POST", hostUrl.String(), strings.NewReader(values.Encode()))
 	if err != nil {
 		return SOFT_FAIL, []error{err}
 	}
@@ -65,8 +66,12 @@ func ValidateFile(host string, path string) (Validation, []error) {
 		return SOFT_FAIL, []error{err}
 	}
 	defer response.Body.Close()
+	if response.StatusCode == 401 {
+		fmt.Printf("HTTP 401 recieved from %s, authentication is required. See usage on how to provide an identity if you have not already, otherwise double check your basic auth or token.\n", hostUrl.Host)
+		os.Exit(1)
+	}
 	if response.StatusCode != 200 {
-		return SOFT_FAIL, []error{fmt.Errorf("Non-200 status from GitLab: %d", response.StatusCode)}
+		return SOFT_FAIL, []error{fmt.Errorf("Non-200 status from %s for %s: %d", hostUrl.Host, hostUrl.Path, response.StatusCode)}
 	}
 
 	responseBytes, err := ioutil.ReadAll(response.Body)
@@ -95,12 +100,32 @@ func getEnv(key, fallback string) string {
 
 func main() {
 	flag.Usage = func() {
-		fmt.Printf("Usage: %s [-host=string] file ...\n", os.Args[0])
+		fmt.Printf("Usage: %s [-host=string] [-token=string] file ...\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
+	token := flag.String("token", getEnv("GITLAB_TOKEN", ""), "GitLab API access token")
+
 	host := flag.String("host", getEnv("GITLAB_HOST", "https://gitlab.com"), "GitLab instance used to validate the config files")
 	flag.Parse()
+
+	baseUrl, err := url.Parse(*host)
+	if err != nil {
+		fmt.Printf("host is not valid URL: %s\n", *host)
+		os.Exit(1)
+	}
+	if baseUrl.Scheme == "" {
+		baseUrl.Scheme = "https"
+		// this is because the baseUrl.Host is not set when the scheme is no present
+		baseUrl, err = url.Parse(baseUrl.String())
+		if err != nil {
+			fmt.Printf("host is not a valid URL: %s\n", *host)
+		}
+	}
+	if *token != "" {
+		params := url.Values{"private_token": {*token}}
+		baseUrl.RawQuery = params.Encode()
+	}
 
 	l := log.New(os.Stderr, "", 0)
 	if flag.NArg() < 1 {
@@ -110,7 +135,7 @@ func main() {
 
 	var result Validation
 	for _, source := range flag.Args() {
-		validation, errs := ValidateFile(*host, source)
+		validation, errs := ValidateFile(*baseUrl, source)
 		if validation > result {
 			result = validation
 		}
