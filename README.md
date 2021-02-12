@@ -6,8 +6,11 @@ If you don't want to use the command line, you can paste your config into `https
 
 ### Usage
 
+> :warning: Since GitLab 13.7.7 (2021-02-11) authentication is required, so you will need to use `--token=$ACCESS_TOKEN` or `--host=http://$username:$password@gitlab.com`
+
 One or more `.gitlab-ci.yml` are passed as arguments on the command line. Any errors will result in a non-zero exit code. The filename must end in `.yml` to pass, but doesn't have to be `.gitlab-ci.yml`.
-An access token must be provided in order to authenticate throw gitlab API. [Here to generate one](https://gitlab.com/-/profile/personal_access_tokens).
+
+An access token must be provided in order to authenticate with the gitlab API. You can see your access tokens through [your profile settings](https://gitlab.com/-/profile/personal_access_tokens). The token must have at least the "api" scope.
 
 ```text
 $ gitlab-ci-validate --token=ACCESS_TOKEN ./good.yml ./maybe-good.yml ./bad.yml
@@ -36,12 +39,12 @@ You can also use a private GitLab host both as a flag or as an environment varia
 The following are equivalent.
 
 ```
-gitlab-ci-validate --token=ACCESS_TOKEN --host=http://user:pass@127.0.0.1:8080 .gitlab-ci.yml
+gitlab-ci-validate --token=$ACCESS_TOKEN --host=http://user:pass@127.0.0.1:8080 .gitlab-ci.yml
 ```
 
 ```
 export GITLAB_HOST=http://user:pass@127.0.0.1:8080
-export GITLAB_TOKEN=XXXXXXX
+export GITLAB_TOKEN=$ACCESS_TOKEN
 gitlab-ci-validate .gitlab-ci.yml
 ```
 
