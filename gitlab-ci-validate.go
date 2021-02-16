@@ -66,8 +66,12 @@ func ValidateFile(hostUrl url.URL, path string) (Validation, []error) {
 		return SOFT_FAIL, []error{err}
 	}
 	defer response.Body.Close()
-	if response.StatusCode == 401 {
-		fmt.Printf("HTTP 401 recieved from %s, authentication is required. See usage on how to provide an identity if you have not already, otherwise double check your basic auth or token.\n", hostUrl.Host)
+	if response.StatusCode == 401 || response.StatusCode == 403 {
+		fmt.Printf("HTTP %d recieved from %s, authentication is required. See usage on how to provide an identity if you have not already, otherwise double check your basic auth or token.\n", response.StatusCode, hostUrl.Host)
+		responseBytes, err := ioutil.ReadAll(response.Body)
+		if err == nil {
+			fmt.Printf("message from server: %s\n", responseBytes)
+		}
 		os.Exit(1)
 	}
 	if response.StatusCode != 200 {
