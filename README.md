@@ -6,7 +6,7 @@ If you don't want to use the command line, you can paste your config into `https
 
 ### Usage
 
-> :warning: Since GitLab 13.7.7 (2021-02-11) authentication is required, so you will need to use `--token=$ACCESS_TOKEN` or `--host=http://$username:$password@gitlab.com`
+> :warning: Since GitLab 13.7.7 (2021-02-11) authentication is required, so you will need to use `--token=$ACCESS_TOKEN` or `--host=http://$USERNAME:$PASSWORD@gitlab.com`
 
 One or more `.gitlab-ci.yml` are passed as arguments on the command line. Any errors will result in a non-zero exit code. The filename must end in `.yml` to pass, but doesn't have to be `.gitlab-ci.yml`.
 
@@ -39,7 +39,7 @@ You can also use a private GitLab host both as a flag or as an environment varia
 The following are equivalent.
 
 ```
-gitlab-ci-validate --token=$ACCESS_TOKEN --host=http://user:pass@127.0.0.1:8080 .gitlab-ci.yml
+gitlab-ci-validate --token=$ACCESS_TOKEN --host=http://$USERNAME:$PASSWORD@127.0.0.1:8080 .gitlab-ci.yml
 ```
 
 ```
@@ -61,33 +61,12 @@ go get -u github.com/Code0x58/gitlab-ci-validate
 
 #### Usage with Docker containers
 
-You can use the Dockerfile to build your own image or use the pre-built version available at the [Gitlab container registry](https://gitlab.com/comedian780/docker-gitlab-ci-validate/container_registry).
+You can use the Dockerfile to build your own image, or use the pre-built version available at the [GitHub Container Registry](https://github.com/Code0x58/gitlab-ci-validate/packages/) - you will need to be logged in first (see [docs](https://docs.github.com/en/packages/guides/configuring-docker-for-use-with-github-packages#authenticating-to-github-packages)).
 
-You can run tests against the gitlab.com endpoint:  
-If no parameter is given the container will look for a file called `.gitlab-ci.yml`
-
-```sh
-docker run -i --rm \
--v ${PWD}/.gitlab-ci.yml:/yaml/.gitlab-ci.yml \
-registry.gitlab.com/comedian780/docker-gitlab-ci-validate
-```
-
-You can run tests against a self hosted Gitlab instance with custom filenames:  
-Set the credentials and URL via the `GITLAB_HOST` environment variable
+The default argument given to `gitlab-ci-validate` in the container is `.gitlab-ci.yml`, so the following will check that file from the current working directory:
 
 ```sh
 docker run -i --rm \
--e GITLAB_HOST=https://GITLAB_USER:GITLAB_PW@your.gitlab.server \
--v ${PWD}:/yaml \
--v /additional/folder/.additional.yml:/yaml/.additional.yml \
-registry.gitlab.com/comedian780/docker-gitlab-ci-validate custom.yml .files.yaml .additional.yml
-```
-
-You can also test all YAML files inside a directory (this also includes YAML files in subdirectories):
-
-```sh
-find . -type f -regex ".*\.\(yaml\|yml\|YAML\|YML\)" | xargs echo | xargs -I {} \
-docker run -i --rm \
--v ${PWD}:/yaml \
-registry.gitlab.com/comedian780/docker-gitlab-ci-validate {}
+    -v "${PWD}":/yaml \
+    docker.pkg.github.com/code0x58/gitlab-ci-validate/gitlab-ci-validate:$VERSION
 ```
