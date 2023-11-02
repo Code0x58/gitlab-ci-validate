@@ -30,7 +30,6 @@ type lintRequest struct {
 
 type lintResponse struct {
 	Valid  bool     `json:"valid"`
-	Status string   `json:"status"`
 	Errors []string `json:"errors"`
 }
 
