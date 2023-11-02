@@ -1,21 +1,35 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/ghodss/yaml"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"runtime"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 )
 
+var DEFAULT_HOST = "https://gitlab.com"
+
+type config struct {
+	Host      string `json:"host"`
+	Token     string `json:"token"`
+	ProjectId string `json:"project_id"`
+}
+
+type lintRequest struct {
+	Content string `json:"content"`
+}
+
 type lintResponse struct {
-	Status string   `json:"status"`
+	Valid  bool     `json:"valid"`
 	Errors []string `json:"errors"`
 }
 
@@ -38,9 +52,10 @@ func init() {
 }
 
 // Validate the given file
-func ValidateFile(hostUrl url.URL, path string) (Validation, []error) {
-	content, err := ioutil.ReadFile(path)
+func ValidateFile(targetUrl *url.URL, path string) (Validation, []error) {
+	content, err := os.ReadFile(path)
 	if err != nil {
+		fmt.Printf("fail to read file %s: %s\n", path, err)
 		return HARD_FAIL, []error{err}
 	}
 
@@ -48,44 +63,49 @@ func ValidateFile(hostUrl url.URL, path string) (Validation, []error) {
 		return HARD_FAIL, []error{fmt.Errorf("file name does not end with .yml - only .gitlab-ci.yaml is allowed by GitLab")}
 	}
 
-	data, err := yaml.YAMLToJSON(content)
+	var body interface{}
+	if err := yaml.Unmarshal([]byte(content), &body); err != nil {
+		return HARD_FAIL, []error{err}
+	}
+
+	lr := lintRequest{Content: string(content)}
+	lrJson, err := json.Marshal(lr)
 	if err != nil {
 		return HARD_FAIL, []error{err}
 	}
 
-	values := url.Values{"content": {string(data)}}
-	hostUrl.Path = "/api/v4/ci/lint"
-	request, err := http.NewRequest("POST", hostUrl.String(), strings.NewReader(values.Encode()))
+	request, err := http.NewRequest("POST", targetUrl.String(), bytes.NewBuffer(lrJson))
 	if err != nil {
 		return SOFT_FAIL, []error{err}
 	}
 	request.Header.Set("User-Agent", userAgent)
+	request.Header.Set("Content-Type", "application/json")
 	response, err := http.DefaultClient.Do(request)
-
 	if err != nil {
 		return SOFT_FAIL, []error{err}
 	}
 	defer response.Body.Close()
 	if response.StatusCode == 401 || response.StatusCode == 403 {
-		fmt.Printf("HTTP %d recieved from %s, authentication is required. See usage on how to provide an identity if you have not already, otherwise double check your basic auth or token.\n", response.StatusCode, hostUrl.Host)
-		responseBytes, err := ioutil.ReadAll(response.Body)
+		fmt.Printf("HTTP %d recieved from %s, authentication is required. See usage on how to provide an identity if you have not already, otherwise double check your basic auth or token.\n", response.StatusCode, targetUrl.Host)
+		responseBytes, err := io.ReadAll(response.Body)
 		if err == nil {
 			fmt.Printf("message from server: %s\n", responseBytes)
 		}
 		os.Exit(1)
 	}
-	if response.StatusCode != 200 {
-		return SOFT_FAIL, []error{fmt.Errorf("Non-200 status from %s for %s: %d", hostUrl.Host, hostUrl.Path, response.StatusCode)}
-	}
 
-	responseBytes, err := ioutil.ReadAll(response.Body)
+	responseBytes, err := io.ReadAll(response.Body)
 	if err != nil {
 		return SOFT_FAIL, []error{err}
 	}
 
+	if response.StatusCode != 200 {
+		return SOFT_FAIL, []error{fmt.Errorf("Non-200 status from %s for %s: %d: %s", targetUrl.Host, targetUrl.Path, response.StatusCode, responseBytes)}
+	}
+
 	var summary lintResponse
 	json.Unmarshal(responseBytes, &summary)
-	if summary.Status != "valid" {
+	if !summary.Valid {
 		errs := make([]error, len(summary.Errors))
 		for i, err := range summary.Errors {
 			errs[i] = fmt.Errorf(err)
@@ -104,31 +124,42 @@ func getEnv(key, fallback string) string {
 
 func main() {
 	flag.Usage = func() {
-		fmt.Printf("Usage: %s [-host=string] [-token=string] file ...\n", os.Args[0])
+		fmt.Printf("Usage: %s [-host=string] [-token=string] [-project-id=string] FILE...\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
-	token := flag.String("token", getEnv("GITLAB_TOKEN", ""), "GitLab API access token")
-
-	host := flag.String("host", getEnv("GITLAB_HOST", "https://gitlab.com"), "GitLab instance used to validate the config files")
+	var c config
+	flag.StringVar(&c.Host, "host", getEnv("GITLAB_HOST", DEFAULT_HOST), "GitLab instance used to validate the config files")
+	flag.StringVar(&c.Token, "token", getEnv("GITLAB_TOKEN", ""), "GitLab API access token")
+	flag.StringVar(&c.ProjectId, "project-id", getEnv("GITLAB_PROJECT_ID", ""), "GitLab project ID")
 	flag.Parse()
 
-	baseUrl, err := url.Parse(*host)
+	targetUrl, err := url.Parse(c.Host)
 	if err != nil {
-		fmt.Printf("host is not valid URL: %s\n", *host)
+		fmt.Printf("host '%s' is not valid URL: %s\n", c.Host, err)
 		os.Exit(1)
 	}
-	if baseUrl.Scheme == "" {
-		baseUrl.Scheme = "https"
+	if targetUrl.Scheme == "" {
+		targetUrl.Scheme = "https"
 		// this is because the baseUrl.Host is not set when the scheme is no present
-		baseUrl, err = url.Parse(baseUrl.String())
+		targetUrl, err = url.Parse(targetUrl.String())
 		if err != nil {
-			fmt.Printf("host is not a valid URL: %s\n", *host)
+			fmt.Printf("host '%s' is not a valid URL: %s\n", targetUrl.String(), err)
 		}
 	}
-	if *token != "" {
-		params := url.Values{"private_token": {*token}}
-		baseUrl.RawQuery = params.Encode()
+	if c.ProjectId == "" {
+		fmt.Printf("project-id is required\n")
+		os.Exit(1)
+	} else {
+		targetUrl.Path = fmt.Sprintf("/api/v4/projects/%s/ci/lint", c.ProjectId)
+	}
+	if c.Token == "" && targetUrl.User == nil {
+		fmt.Printf("token is required\n")
+		os.Exit(1)
+	} else {
+		query := targetUrl.Query()
+		query.Add("private_token", c.Token)
+		targetUrl.RawQuery = query.Encode()
 	}
 
 	l := log.New(os.Stderr, "", 0)
@@ -139,7 +170,7 @@ func main() {
 
 	var result Validation
 	for _, source := range flag.Args() {
-		validation, errs := ValidateFile(*baseUrl, source)
+		validation, errs := ValidateFile(targetUrl, source)
 		if validation > result {
 			result = validation
 		}
