@@ -13,7 +13,5 @@ WORKDIR /yaml
 COPY --from=build-step /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build-step /build/gitlab-ci-validate /gitlab-ci-validate
 
-ENV GITLAB_HOST=https://gitlab.com
-
 ENTRYPOINT [ "/gitlab-ci-validate" ]
 CMD [ ".gitlab-ci.yml" ]
