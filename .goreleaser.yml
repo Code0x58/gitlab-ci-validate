@@ -10,6 +10,13 @@ builds:
       - linux
       - windows
       - darwin
+upx:
+  - enabled: true
+    compress: best
+    lzma: true
+    goos:
+      - linux
+
 archives:
   - id: binary
     format: binary
