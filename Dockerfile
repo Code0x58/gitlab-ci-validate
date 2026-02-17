@@ -1,7 +1,9 @@
-FROM golang:alpine as build-step
+FROM golang:1.26.0-alpine AS build-step
 
 WORKDIR /build
 COPY . .
+
+ENV GOTOOLCHAIN=local
 
 RUN apk add --no-cache ca-certificates && \
   CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -tags netgo -ldflags '-w' ./gitlab-ci-validate.go
