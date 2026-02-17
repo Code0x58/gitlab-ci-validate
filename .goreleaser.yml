@@ -1,6 +1,11 @@
 builds:
   - env:
       - CGO_ENABLED=0
+    flags:
+      - -trimpath
+      - -buildvcs=false
+    ldflags:
+      - -s -w -buildid= -X main.version={{ .Version }}
     goos:
       - linux
       - windows

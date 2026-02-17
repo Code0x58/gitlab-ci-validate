@@ -6,7 +6,7 @@ COPY . .
 ENV GOTOOLCHAIN=local
 
 RUN apk add --no-cache ca-certificates && \
-  CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -tags netgo -ldflags '-w' ./gitlab-ci-validate.go
+  CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -buildvcs=false -tags netgo -ldflags '-s -w -buildid=' ./gitlab-ci-validate.go
 
 
 FROM scratch
