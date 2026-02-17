@@ -56,10 +56,10 @@ When not specified the host used is by default `https://gitlab.com`
 
 ## Installation
 
-You can either use a premade binary from the [releases page](https://github.com/Code0x58/gitlab-ci-validate/releases) or you can install it using `go get`:
+You can either use a premade binary from the [releases page](https://github.com/Code0x58/gitlab-ci-validate/releases) or you can install it using `go install`:
 
 ```sh
-go get -u github.com/Code0x58/gitlab-ci-validate
+go install github.com/Code0x58/gitlab-ci-validate@latest
 ```
 
 ### Usage with Docker containers

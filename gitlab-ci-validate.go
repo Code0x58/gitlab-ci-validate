@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -104,11 +105,13 @@ func ValidateFile(targetUrl *url.URL, path string) (Validation, []error) {
 	}
 
 	var summary lintResponse
-	json.Unmarshal(responseBytes, &summary)
+	if err := json.Unmarshal(responseBytes, &summary); err != nil {
+		return SOFT_FAIL, []error{err}
+	}
 	if !summary.Valid {
 		errs := make([]error, len(summary.Errors))
 		for i, err := range summary.Errors {
-			errs[i] = fmt.Errorf(err)
+			errs[i] = errors.New(err)
 		}
 		return HARD_FAIL, errs
 	}
