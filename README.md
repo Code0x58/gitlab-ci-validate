@@ -32,7 +32,7 @@ Each input file will be validated and one of 3 results will be printed for it:
 The exit code will be:
 
 - 0 if all files are valid (all _PASS_)
-- 1 if any files are invalid (any _HARD FAIL_)
+- 1 if there are bad CLI args or if any files are invalid (any _HARD FAIL_)
 - 2 if there was any _SOFT FAIL_ and no _HARD FAIL_
 
 ## Using private GitLab host

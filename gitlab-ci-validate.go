@@ -126,16 +126,22 @@ func getEnv(key, fallback string) string {
 }
 
 func main() {
-	flag.Usage = func() {
+	flags := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+
+	flags.Usage = func() {
 		fmt.Printf("Usage: %s [-host=string] [-token=string] [-project-id=string] FILE...\n", os.Args[0])
-		flag.PrintDefaults()
+		flags.PrintDefaults()
 	}
 
 	var c config
-	flag.StringVar(&c.Host, "host", getEnv("GITLAB_HOST", DEFAULT_HOST), "GitLab instance used to validate the config files")
-	flag.StringVar(&c.Token, "token", getEnv("GITLAB_TOKEN", ""), "GitLab API access token")
-	flag.StringVar(&c.ProjectId, "project-id", getEnv("GITLAB_PROJECT_ID", ""), "GitLab project ID")
-	flag.Parse()
+	flags.StringVar(&c.Host, "host", getEnv("GITLAB_HOST", DEFAULT_HOST), "GitLab instance used to validate the config files")
+	flags.StringVar(&c.Token, "token", getEnv("GITLAB_TOKEN", ""), "GitLab API access token")
+	flags.StringVar(&c.ProjectId, "project-id", getEnv("GITLAB_PROJECT_ID", ""), "GitLab project ID")
+	if err := flags.Parse(os.Args[1:]); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	targetUrl, err := url.Parse(c.Host)
 	if err != nil {
@@ -166,13 +172,13 @@ func main() {
 	}
 
 	l := log.New(os.Stderr, "", 0)
-	if flag.NArg() < 1 {
-		flag.Usage()
+	if flags.NArg() < 1 {
+		flags.Usage()
 		os.Exit(1)
 	}
 
 	var result Validation
-	for _, source := range flag.Args() {
+	for _, source := range flags.Args() {
 		validation, errs := ValidateFile(targetUrl, source)
 		if validation > result {
 			result = validation
